@@ -1,14 +1,13 @@
 #include "cards.h"
 
-constexpr unsigned int cards::handValue(const value cardType[]) {
-    const unsigned int handSize = sizeof(cardType);
+constexpr unsigned int cards::handValue(const value cardType[12]) {
 
-    if (handSize > 11 && cardType[11] != cards::value::Null) return 0;
+    if (cardType[11] != cards::value::Null) return 0;
 
     unsigned int handValue = 0;
     unsigned int numberOfAce = 0;
 
-    for (unsigned int i = 0; i < handSize; i++) {
+    for (unsigned int i = 0; i < 12; i++) {
         const value currentCard = cardType[i];
 
         if (currentCard != cards::value::Ace)

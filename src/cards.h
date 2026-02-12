@@ -26,5 +26,5 @@ namespace cards {
         King = 10
     };
 
-    constexpr unsigned int handValue(const value cardType[]);
+    constexpr unsigned int handValue(const value cardType[12]);
 }
