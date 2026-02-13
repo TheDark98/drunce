@@ -5,7 +5,7 @@
 namespace cards {
 
     enum seed {
-        Null,
+        SNull,
         Heart,
         Diamond,
         Spade,
@@ -13,7 +13,7 @@ namespace cards {
     };
 
     enum value {
-        Null,
+        VNull,
         Ace,
         Two,
         Three,
@@ -29,5 +29,5 @@ namespace cards {
         King = 10
     };
 
-    constexpr unsigned int handValue(const std::pair<cards::value, cards::seed> cardType[12]);
+    unsigned int handValue(const std::pair<cards::value, cards::seed> cardType[12]);
 }

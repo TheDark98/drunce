@@ -1,8 +1,8 @@
 #include "cards.h"
 
-constexpr unsigned int cards::handValue(const std::pair<cards::value, cards::seed> cardsHand[12]) {
+unsigned int cards::handValue(const std::pair<cards::value, cards::seed> cardsHand[12]) {
 
-    if (cardsHand[11].first != cards::value::Null) return 0;
+    if (cardsHand[11].first != cards::value::VNull) return 0;
 
     unsigned int handValue = 0;
     unsigned int numberOfAce = 0;
