@@ -6,10 +6,10 @@
 namespace DrunkEngine {
     class Random {
     public:
-        Random(const uint32_t seed);
-        uint32_t NextRandom() const;
+        Random(const uint64_t seed);
+        uint64_t NextRandom() const;
 
     private:
-        mutable std::mt19937 generator;
+        mutable std::mt19937_64 generator;
     };
 }
