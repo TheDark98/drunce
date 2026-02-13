@@ -1,4 +1,6 @@
 #include <iostream>
+#include <algorithm>
+#include <string>
 
 #include "seedGen.h"
 #include "cards.h"
