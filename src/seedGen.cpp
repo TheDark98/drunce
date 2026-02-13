@@ -1,8 +1,8 @@
 #include "seedGen.h"
 
-#define MAX_CARD_NUMBER 13 * 4
+static std::mt19937 generator;
 
-const unsigned int seedBlackJack::generate(unsigned int userSeed) {
+unsigned int seedBlackJack::generate(unsigned int userSeed) {
     if (userSeed == 0) {
         std::random_device rd;
         userSeed = rd();
@@ -12,11 +12,11 @@ const unsigned int seedBlackJack::generate(unsigned int userSeed) {
 
     userSeed = seedGen();
 
-    seedBlackJack::generator.seed(userSeed);
+    generator.seed(userSeed);
 
     return userSeed;
 }
 
-const unsigned int seedBlackJack::getRandom() {
-    return seedBlackJack::generator();
+unsigned int seedBlackJack::getRandom() {
+    return generator();
 }
