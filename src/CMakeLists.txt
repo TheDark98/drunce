@@ -3,6 +3,9 @@ add_subdirectory(generator)
 add_subdirectory(deck)
 add_subdirectory(hand)
 add_subdirectory(engine)
+add_subdirectory(ai)
+add_subdirectory(formatting)
+
 
 add_executable(${CMAKE_PROJECT_NAME} main.cpp)
 
@@ -10,4 +13,4 @@ if (WIN32)
 	target_compile_options("${CMAKE_PROJECT_NAME}" PRIVATE /UUNICODE /U_UNICODE)
 endif()
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE card deck hand engine)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ai formatting card deck hand engine)

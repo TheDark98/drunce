@@ -16,7 +16,9 @@ namespace DrunkEngine
     enum class GameDifficulty
     {
         EASY,
-        NORMAL
+        NORMAL,
+        HARD,
+        CHEAT
     };
 
     enum class GameRule

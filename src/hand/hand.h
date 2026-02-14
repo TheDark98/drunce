@@ -15,7 +15,8 @@ namespace DrunkEngine
         void AddCard(const DrunkEngine::Card card);
         std::array<DrunkEngine::Card, HAND_SIZE> GetHand() const;
         uint8_t GetValue() const;
-
+        uint8_t GetRawValue() const;
+        uint8_t GetSize() const;
     private:
         uint8_t calcValue();
         std::array<DrunkEngine::Card, HAND_SIZE> cards;

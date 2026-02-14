@@ -3,6 +3,8 @@
 #include <string_view>
 #include <cstdint>
 
+#include <colors.h>
+
 namespace DrunkEngine
 {
     namespace CardType
@@ -12,7 +14,16 @@ namespace DrunkEngine
             "Heart",
             "Diamond",
             "Spade",
-            "Club"};
+            "Club"
+        };
+
+        constexpr std::string_view SeedColor[5] = {
+            ERROR_COLOR,
+            HEART_COLOR,
+            DIAMOND_COLOR,
+            SPADE_COLOR,
+            CLUB_COLOR
+        };
 
         enum class Seed
         {
@@ -37,7 +48,25 @@ namespace DrunkEngine
             "Ten",
             "Jack",
             "Queen",
-            "King"};
+            "King"
+        };
+
+        constexpr std::string_view ValueColor[14] = {
+            ERROR_COLOR,
+            ACE_COLOR,
+            TWO_COLOR,
+            THREE_COLOR,
+            FOUR_COLOR,
+            FIVE_COLOR,
+            SIX_COLOR,
+            SEVEN_COLOR,
+            EIGHT_COLOR,
+            NINE_COLOR,
+            TEN_COLOR,
+            JACK_COLOR,
+            QUEEN_COLOR,
+            KING_COLOR
+        };
 
         enum class Value
         {

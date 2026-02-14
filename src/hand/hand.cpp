@@ -28,6 +28,21 @@ uint8_t DrunkEngine::Hand::GetValue() const
     return handValue;
 }
 
+uint8_t DrunkEngine::Hand::GetRawValue() const
+{
+    uint8_t rawValue = 0;
+    for (uint8_t i = 0; i < cards.size(); i++)
+    {
+        rawValue += DrunkEngine::FromEnumToInt(cards[i].value);
+    }
+    return 0;
+}
+
+uint8_t DrunkEngine::Hand::GetSize() const
+{
+    return handIndex;
+}
+
 uint8_t DrunkEngine::Hand::calcValue()
 {
     using namespace DrunkEngine;

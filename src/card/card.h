@@ -9,8 +9,8 @@ namespace DrunkEngine
 
     constexpr uint8_t FromEnumToInt(const DrunkEngine::CardType::Value value);
     constexpr uint8_t FromEnumToInt(const DrunkEngine::CardType::Seed seed);
-    constexpr std::string_view FromEnumToString(const DrunkEngine::CardType::Value value);
-    constexpr std::string_view FromEnumToString(const DrunkEngine::CardType::Seed seed);
+    constexpr std::string FromEnumToString(const DrunkEngine::CardType::Value value);
+    constexpr std::string FromEnumToString(const DrunkEngine::CardType::Seed seed);
 
     struct Card
     {
@@ -44,14 +44,16 @@ namespace DrunkEngine
         return static_cast<uint8_t>(seed);
     }
 
-    constexpr std::string_view FromEnumToString(const DrunkEngine::CardType::Value value)
+    constexpr std::string FromEnumToString(const DrunkEngine::CardType::Value value)
     {
-        return DrunkEngine::CardType::ValueName[FromEnumToInt(value)];
+        const int id = FromEnumToInt(value);
+        return std::string(DrunkEngine::CardType::ValueColor[id]) + std::string(DrunkEngine::CardType::ValueName[id]) + RESET;
     }
 
-    constexpr std::string_view FromEnumToString(const DrunkEngine::CardType::Seed seed)
+    constexpr std::string FromEnumToString(const DrunkEngine::CardType::Seed seed)
     {
-        return DrunkEngine::CardType::SeedName[FromEnumToInt(seed)];
+        const int id = FromEnumToInt(seed);
+        return std::string(DrunkEngine::CardType::SeedColor[id]) + std::string(DrunkEngine::CardType::SeedName[id]) + RESET;
     }
 
     constexpr std::string FromCardToString(const DrunkEngine::Card card)

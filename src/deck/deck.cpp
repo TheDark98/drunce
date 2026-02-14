@@ -37,7 +37,17 @@ DrunkEngine::Card DrunkEngine::Deck::Draw()
     return cards[deckIndex - 1];
 }
 
-DrunkEngine::Card DrunkEngine::Deck::LastDraw()
+DrunkEngine::Card DrunkEngine::Deck::LastDraw() const
 {
     return cards[deckIndex - 1];
+}
+
+DrunkEngine::Card DrunkEngine::Deck::PickCard(const uint8_t index) const
+{
+    return cards[index];
+}
+
+uint8_t DrunkEngine::Deck::GetIndex() const
+{
+    return deckIndex;
 }

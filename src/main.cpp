@@ -10,9 +10,17 @@
 #include <card.h>
 #include <deck.h>
 #include <hand.h>
+#include "colors.h"
+#include <thread>
+#include "ai.h"
 
 #define MAX_ROUNDS 9
-#define SPACER "——————————————————————————————————\n"
+#define SPACER "————————————————————————————————————————\n"
+#ifdef _WIN32
+#define BACKGROUND_COLOR
+#else
+#define BACKGROUND_COLOR
+#endif
 
 void clearScreen() {
     #ifdef _WIN32
@@ -26,6 +34,11 @@ std::string InputLine();
 bool InputIsYes(const std::string_view response);
 uint64_t askPlayerSeed();
 bool isPlayerWinner(const DrunkEngine::Hand &playerHand, const DrunkEngine::Hand &dealerHand);
+void formattedPrint(const std::string_view style, const std::string_view color, const std::string_view message);
+void formattedPrint(const std::string_view message);
+void printPlayerHand(const DrunkEngine::Hand &hand);
+void printDealerHand(const DrunkEngine::Hand &hand);
+void printDealerSecretHand(const DrunkEngine::Card card);
 
 int main()
 {
@@ -34,8 +47,8 @@ int main()
     while (!engine.IsInGameState(DrunkEngine::GameState::EXIT))
     {
         const uint64_t seed = askPlayerSeed();
-        printf(SPACER);
         engine.SetGameState(DrunkEngine::GameState::PLAYING);
+        clearScreen();
 
         while (engine.IsInGameState(DrunkEngine::GameState::PLAYING) || engine.IsInGameState(DrunkEngine::GameState::PAUSED))
         {
@@ -45,75 +58,68 @@ int main()
             DrunkEngine::Hand dealerHand;
 
             playerHand.AddCard(deck.Draw());
-            printf("You got: %s\n", DrunkEngine::FromCardToString(deck.LastDraw()).data());
-            printf("Your Hand Value: %d\n", playerHand.GetValue());
-            printf(SPACER);
+            printPlayerHand(playerHand);
+            std::this_thread::sleep_for(std::chrono::seconds(4));
+            clearScreen();
 
             dealerHand.AddCard(deck.Draw());
-            printf("Dealer got: %s\n", DrunkEngine::FromCardToString(deck.LastDraw()).data());
-            printf(SPACER);
+            printPlayerHand(playerHand);
+            printDealerHand(dealerHand);
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            clearScreen();
 
             playerHand.AddCard(deck.Draw());
-            printf("You got: %s\n", DrunkEngine::FromCardToString(deck.LastDraw()).data());
-            printf("Your Hand Value: %d\n", playerHand.GetValue());
-            printf(SPACER);
+            printPlayerHand(playerHand);
+            printDealerSecretHand(dealerHand.GetHand()[0]);
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            clearScreen();
 
             dealerHand.AddCard(deck.Draw());
-            printf("Dealer got a Secret Card\n");
-            printf(SPACER);
+            printPlayerHand(playerHand);
+            printDealerSecretHand(dealerHand.GetHand()[0]);
+            clearScreen();
 
             // Player Draw Phase
             for (uint8_t i = 0; i < MAX_ROUNDS; i++)
             {
-                printf("Draw a card? (Y/n): ");
-                if (!InputIsYes(InputLine()) || playerHand.GetValue() > 21)
-                    break;
-                printf(SPACER);
+                printPlayerHand(playerHand);
+                printDealerSecretHand(dealerHand.GetHand()[0]);
+                formattedPrint("Draw a card? (Y/n): ");
+                if (!InputIsYes(InputLine()) || playerHand.GetValue() > 21) break;
+                clearScreen();
 
                 playerHand.AddCard(deck.Draw());
-                printf("You got: %s\n", DrunkEngine::FromCardToString(deck.LastDraw()).data());
-                printf("Your Hand Value: %d\n", playerHand.GetValue());
-                printf(SPACER);
             }
-            printf(SPACER);
+            clearScreen();
+
+            DrunkEngine::DealerAI dealerAI(engine.GetGameDifficulty(), &dealerHand, playerHand, deck);
 
             // Dealer Draw Phase
             for (uint8_t i = 0; i < MAX_ROUNDS; i++)
             {
                 if (playerHand.GetValue() > 21)
                     break;
-                if (dealerHand.GetValue() > 21)
+                if (dealerHand.GetValue() >= 21)
                     break;
-
-                std::random_device rd;
-
-                bool botStopDrawing = (rd() % 2);
-
-                if (botStopDrawing)
+                
+                printPlayerHand(playerHand);
+                printDealerHand(dealerHand);
+                formattedPrint("Dealer is thinking...\n");
+                
+                if (dealerAI.choice())
                     break;
 
                 dealerHand.AddCard(deck.Draw());
-                printf("Dealer got a card\n");
-                printf(SPACER);
+                std::this_thread::sleep_for(std::chrono::milliseconds(((playerHand.GetValue() + dealerHand.GetValue()) / 10) * 1000));
+                clearScreen();
             }
+            clearScreen();
 
-            if (playerHand.GetValue() < 22)
-            {
-                printf("Your Hand\n");
-                printf("%s\n", DrunkEngine::FromCardToString(playerHand.GetHand()).data());
-                printf("Value of Your Hand: %d\n", playerHand.GetValue());
-                printf(SPACER);
-
-                printf("Dealer Hand\n");
-                printf("%s\n", DrunkEngine::FromCardToString(dealerHand.GetHand()).data());
-                printf("Value of Dealer Hand: %d\n", dealerHand.GetValue());
-                printf(SPACER);
-            }
-            else
-            {
-                printf("Oof... You broke the barrier");
-                printf(SPACER);
-            }
+            printPlayerHand(playerHand);
+            printDealerHand(dealerHand);
+            formattedPrint("Press Enter to Continue\n");
+            std::cin.get();
+            clearScreen();
 
             bool playerWon = isPlayerWinner(playerHand, dealerHand);
 
@@ -122,9 +128,13 @@ int main()
             else
                 engine.SetGameState(DrunkEngine::GameState::LOSE);
         }
-        printf("You %s\n", engine.IsInGameState(DrunkEngine::GameState::WIN) ? "WON!" : "LOSE!");
-        printf(SPACER);
-        printf("Play Again? (Y/n): ");
+
+        const bool playerWon = engine.IsInGameState(DrunkEngine::GameState::WIN);
+        std::string resoultString = playerWon ? "WON!" : "LOSE!";
+
+        formattedPrint(BOLD, playerWon ? WIN_COLOR : LOSE_COLOR, std::string("YOU ") + resoultString + "\n");
+        formattedPrint(BOLD, WHITE, SPACER);
+        formattedPrint("Play Again? (Y/n): ");
         if (!InputIsYes(InputLine()))
             engine.SetGameState(DrunkEngine::GameState::EXIT);
         clearScreen();
@@ -154,7 +164,7 @@ bool InputIsYes(const std::string_view response)
 
 uint64_t askPlayerSeed()
 {
-    printf("Seed (0 is random): ");
+    formattedPrint("Seed (0 is random): ");
     std::string userResponse = InputLine();
     if (userResponse.empty())
         userResponse = "0";
@@ -179,4 +189,36 @@ bool isPlayerWinner(const DrunkEngine::Hand &playerHand, const DrunkEngine::Hand
     if (!playerHandIsValid)
         return false;
     return true;
+}
+
+void formattedPrint(const std::string_view style, const std::string_view color, const std::string_view message)
+{
+    printf("%s%s%s%s", style.data(), color.data(), message.data(), RESET);
+}
+
+void formattedPrint(const std::string_view message)
+{
+    printf("%s%s%s", WHITE, message.data(), RESET);
+}
+
+void printPlayerHand(const DrunkEngine::Hand &hand) {
+    formattedPrint("Your Hand\n");
+    formattedPrint(DrunkEngine::FromCardToString(hand.GetHand()) + "\n");
+    formattedPrint(BOLD, WHITE, std::string("Value: ") + std::to_string(hand.GetValue()) + "\n");
+    formattedPrint(BOLD, WHITE, SPACER);
+}
+
+void printDealerHand(const DrunkEngine::Hand &hand) {
+    formattedPrint("Dealer Hand\n");
+    formattedPrint(DrunkEngine::FromCardToString(hand.GetHand()) + "\n");
+    formattedPrint(BOLD, WHITE, std::string("Value: ") + std::to_string(hand.GetValue()) + "\n");
+    formattedPrint(BOLD, WHITE, SPACER);
+}
+
+void printDealerSecretHand(const DrunkEngine::Card card) {
+    formattedPrint("Dealer Hand\n");
+    formattedPrint(DrunkEngine::FromCardToString(card) + "\n");
+    formattedPrint("Secret Card\n");
+    formattedPrint(BOLD, WHITE, std::string("Value: ") + "?" + "\n");
+    formattedPrint(BOLD, WHITE, SPACER);
 }
