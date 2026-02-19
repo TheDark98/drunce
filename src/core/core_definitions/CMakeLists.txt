@@ -1,0 +1,3 @@
+add_library(core_definitions INTERFACE)
+
+target_include_directories(core_definitions INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

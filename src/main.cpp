@@ -1,25 +1,20 @@
-#include <algorithm>
 #include <iostream>
-#include <cstdlib>
 #include <string>
-#include <cctype>
+#include <vector>
+#include <algorithm>
 #include <random>
+#include <thread>
+#include <chrono>
 
 #include <engine.h>
-#include <card.h>
-#include <deck.h>
-#include <hand.h>
-#include "colors.h"
-#include <thread>
-#include "ai.h"
+#include <deck_handler.h>
+#include <player.h>
+#include <ai_logic.h>
+#include <colors.h>
+#include <special_characters.h>
 
 #define MAX_ROUNDS 9
-#define SPACER "————————————————————————————————————————\n"
-#ifdef _WIN32
-#define BACKGROUND_COLOR
-#else
-#define BACKGROUND_COLOR
-#endif
+#define VISUAL_SPACER "————————————————————————————————————————\n"
 
 void clearScreen()
 {
@@ -30,112 +25,172 @@ void clearScreen()
 #endif
 }
 
+const std::string SuitName[5] = {
+    "Undefined",
+    SUIT_HEART,
+    SUIT_DIAMOND,
+    SUIT_SPADE,
+    SUIT_CLUB
+};
+
+const std::string SuitColor[5] = {
+    ERROR_COLOR,
+    HEART_COLOR,
+    DIAMOND_COLOR,
+    SPADE_COLOR,
+    CLUB_COLOR
+};
+
+const std::string RankName[14] = {
+    "Undefined",
+    "Ace",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Jack",
+    "Queen",
+    "King"
+};
+
+const std::string RankColor[14] = {
+    ERROR_COLOR,
+    ACE_COLOR,
+    TWO_COLOR,
+    THREE_COLOR,
+    FOUR_COLOR,
+    FIVE_COLOR,
+    SIX_COLOR,
+    SEVEN_COLOR,
+    EIGHT_COLOR,
+    NINE_COLOR,
+    TEN_COLOR,
+    JACK_COLOR,
+    QUEEN_COLOR,
+    KING_COLOR
+};
+
 std::string InputLine();
 bool InputIsYes(const std::string_view response);
 uint64_t askPlayerSeed();
-bool isPlayerWinner(const DrunkEngine::Hand &playerHand, const DrunkEngine::Hand &dealerHand);
+bool isPlayerWinner(const uint8_t playerScore, const uint8_t dealerScore);
 void formattedPrint(const std::string_view style, const std::string_view color, const std::string_view message);
 void formattedPrint(const std::string_view message);
-void printPlayerHand(const DrunkEngine::Hand &hand);
-void printDealerHand(const DrunkEngine::Hand &hand);
-void printDealerSecretHand(const DrunkEngine::Card card);
+void printPlayerHand(DrunkEngine::Hand &hand);
+void printDealerHand(DrunkEngine::Hand &hand);
+void printDealerSecretHand(DrunkEngine::Hand &hand);
+std::string FromCardToString(const DrunkEngine::Card card);
+std::string FromHandToString(DrunkEngine::Hand &hand);
+std::string FromSecretHandToString(DrunkEngine::Hand &hand);
 
 int main()
 {
     clearScreen();
     DrunkEngine::GameEngine engine;
-    while (!engine.IsInGameState(DrunkEngine::GameState::EXIT))
+    while (!(engine == DrunkEngine::GameState::QUITTING))
     {
         const uint64_t seed = askPlayerSeed();
-        engine.SetGameState(DrunkEngine::GameState::PLAYING);
+        engine.SetGameState(DrunkEngine::GameState::IN_PROGRESS);
         clearScreen();
 
-        while (engine.IsInGameState(DrunkEngine::GameState::PLAYING) || engine.IsInGameState(DrunkEngine::GameState::PAUSED))
+        while (engine == DrunkEngine::GameState::IN_PROGRESS || engine == DrunkEngine::GameState::PAUSED)
         {
-            DrunkEngine::Deck deck(seed);
+            std::vector<DrunkEngine::Player> players;
+            players.reserve(2);
+            players.emplace_back(0);
+            players.emplace_back(1);
+            
+            DrunkEngine::DeckHandler deck(players.size(), seed);
 
-            DrunkEngine::Hand playerHand;
-            DrunkEngine::Hand dealerHand;
+            for (auto &player : players)
+                player.AssignHand(&deck.GetPlayerHand(player.GetPlayerID()));
 
-            playerHand.AddCard(deck.Draw());
-            printPlayerHand(playerHand);
+            players[1].GetHand() += deck.Draw();
+            printPlayerHand(players[1].GetHand());
             std::this_thread::sleep_for(std::chrono::seconds(1));
             clearScreen();
 
-            dealerHand.AddCard(deck.Draw());
-            printPlayerHand(playerHand);
-            printDealerHand(dealerHand);
+            players[0].GetHand() += deck.Draw();
+            printPlayerHand(players[1].GetHand());
+            printDealerHand(players[0].GetHand());
             std::this_thread::sleep_for(std::chrono::seconds(1));
             clearScreen();
 
-            playerHand.AddCard(deck.Draw());
-            printPlayerHand(playerHand);
-            printDealerSecretHand(dealerHand.GetHand()[0]);
+            players[1].GetHand() += deck.Draw();
+            printPlayerHand(players[1].GetHand());
+            printDealerHand(players[0].GetHand());
             std::this_thread::sleep_for(std::chrono::seconds(1));
             clearScreen();
 
-            dealerHand.AddCard(deck.Draw());
+            players[0].GetHand() += deck.Draw();
+            printPlayerHand(players[1].GetHand());
+            printDealerSecretHand(players[0].GetHand());
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            clearScreen();
 
             // Player Draw Phase
             for (uint8_t i = 0; i < MAX_ROUNDS; i++)
             {
-                printPlayerHand(playerHand);
-                printDealerSecretHand(dealerHand.GetHand()[0]);
+                printPlayerHand(players[1].GetHand());
+                printDealerSecretHand(players[0].GetHand());
                 formattedPrint("Draw a card? (Y/n): ");
-                if (!InputIsYes(InputLine()) || playerHand.GetValue() > 21)
+                if (!InputIsYes(InputLine()) || players[1].GetHand() > 21)
                     break;
                 clearScreen();
 
-                playerHand.AddCard(deck.Draw());
+                players[1].GetHand() += deck.Draw();
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
             clearScreen();
 
-            DrunkEngine::DealerAI dealerAI(engine.GetGameDifficulty(), &dealerHand, playerHand, deck);
-
             // Dealer Draw Phase
             for (uint8_t i = 0; i < MAX_ROUNDS; i++)
             {
-                if (playerHand.GetValue() > 21)
+                if (players[1].GetHand() > 21)
                     break;
-                if (dealerHand.GetValue() >= 21)
+                if (players[0].GetHand() >= players[1].GetHand().GetValue(false))
                     break;
 
-                printPlayerHand(playerHand);
-                printDealerHand(dealerHand);
                 formattedPrint("Dealer is thinking...\n");
+                if (DrunkEngine::AILogic::Choose(engine.GetDifficulty(), players[0].GetPlayerID(), &players)) break;
 
-                if (dealerAI.choice())
-                    break;
-
-                dealerHand.AddCard(deck.Draw());
-                std::this_thread::sleep_for(std::chrono::milliseconds(((playerHand.GetValue() + dealerHand.GetValue()) / 10) * 1000));
+                players[0].GetHand() += deck.Draw();
+                printPlayerHand(players[1].GetHand());
+                printDealerHand(players[0].GetHand());
+                std::this_thread::sleep_for(std::chrono::milliseconds((players[0].GetPlayerID() / 10) * 1000));
                 clearScreen();
             }
             clearScreen();
 
-            printPlayerHand(playerHand);
-            printDealerHand(dealerHand);
+            printPlayerHand(players[1].GetHand());
+            printDealerHand(players[0].GetHand());
             formattedPrint("Press Enter to Continue\n");
-            std::cin.get();
+            InputLine();
             clearScreen();
 
-            bool playerWon = isPlayerWinner(playerHand, dealerHand);
+            engine.SetGameState(DrunkEngine::GameState::ENDED);
+
+            const bool playerWon = isPlayerWinner(players[1].GetHand().GetValue(false), players[0].GetHand().GetValue(false));
 
             if (playerWon)
-                engine.SetGameState(DrunkEngine::GameState::WIN);
+                engine.SetResult(DrunkEngine::Result::VICTORY);
             else
-                engine.SetGameState(DrunkEngine::GameState::LOSE);
+                engine.SetResult(DrunkEngine::Result::DEFEAT);
         }
 
-        const bool playerWon = engine.IsInGameState(DrunkEngine::GameState::WIN);
+        const bool playerWon = engine == DrunkEngine::Result::VICTORY;
         std::string resoultString = playerWon ? "WON!" : "LOSE!";
 
         formattedPrint(BOLD, playerWon ? WIN_COLOR : LOSE_COLOR, std::string("YOU ") + resoultString + "\n");
-        formattedPrint(BOLD, WHITE, SPACER);
+        formattedPrint(BOLD, WHITE, VISUAL_SPACER);
         formattedPrint("Play Again? (Y/n): ");
         if (!InputIsYes(InputLine()))
-            engine.SetGameState(DrunkEngine::GameState::EXIT);
+            engine.SetGameState(DrunkEngine::GameState::QUITTING);
         clearScreen();
     }
     return 0;
@@ -177,11 +232,11 @@ uint64_t askPlayerSeed()
     return doublemized;
 }
 
-bool isPlayerWinner(const DrunkEngine::Hand &playerHand, const DrunkEngine::Hand &dealerHand)
+bool isPlayerWinner(const uint8_t playerScore, const uint8_t dealerScore)
 {
-    bool playerIsGreater = playerHand.GetValue() > dealerHand.GetValue();
-    bool playerHandIsValid = playerHand.GetValue() < 22;
-    bool dealerHandIsValid = dealerHand.GetValue() < 22;
+    bool playerIsGreater = playerScore > dealerScore;
+    bool playerHandIsValid = playerScore < 22;
+    bool dealerHandIsValid = dealerScore < 22;
 
     if (playerHandIsValid && dealerHandIsValid)
         return playerIsGreater;
@@ -200,27 +255,67 @@ void formattedPrint(const std::string_view message)
     printf("%s%s%s", WHITE, message.data(), RESET);
 }
 
-void printPlayerHand(const DrunkEngine::Hand &hand)
+void printPlayerHand(DrunkEngine::Hand &hand)
 {
     formattedPrint("Your Hand\n");
-    formattedPrint(DrunkEngine::FromCardToString(hand.GetHand()) + "\n");
-    formattedPrint(BOLD, WHITE, std::string("Value: ") + std::to_string(hand.GetValue()) + "\n");
-    formattedPrint(BOLD, WHITE, SPACER);
+    formattedPrint(FromHandToString(hand) + "\n");
+    formattedPrint(BOLD, WHITE, std::string("Value: ") + std::to_string(hand.GetValue(false)) + "\n");
+    formattedPrint(BOLD, WHITE, VISUAL_SPACER);
 }
 
-void printDealerHand(const DrunkEngine::Hand &hand)
+void printDealerHand(DrunkEngine::Hand &hand)
 {
     formattedPrint("Dealer Hand\n");
-    formattedPrint(DrunkEngine::FromCardToString(hand.GetHand()) + "\n");
-    formattedPrint(BOLD, WHITE, std::string("Value: ") + std::to_string(hand.GetValue()) + "\n");
-    formattedPrint(BOLD, WHITE, SPACER);
+    formattedPrint(FromHandToString(hand) + "\n");
+    formattedPrint(BOLD, WHITE, std::string("Value: ") + std::to_string(hand.GetValue(false)) + "\n");
+    formattedPrint(BOLD, WHITE, VISUAL_SPACER);
 }
 
-void printDealerSecretHand(const DrunkEngine::Card card)
+void printDealerSecretHand(DrunkEngine::Hand &hand)
 {
     formattedPrint("Dealer Hand\n");
-    formattedPrint(DrunkEngine::FromCardToString(card) + "\n");
+    formattedPrint(FromSecretHandToString(hand) + "\n");
     formattedPrint("Secret Card\n");
     formattedPrint(BOLD, WHITE, std::string("Value: ") + "?" + "\n");
-    formattedPrint(BOLD, WHITE, SPACER);
+    formattedPrint(BOLD, WHITE, VISUAL_SPACER);
+}
+
+std::string FromCardToString(const DrunkEngine::Card card)
+{
+    if (card == DrunkEngine::CardTrait::Rank::ACE)
+    return std::string(SuitColor[card.GetSuit()].data()) + std::string(SuitName[card.GetSuit()]) + " " + std::string(RankColor[card.GetRank()].data()) + std::string(RankName[card.GetRank()].data()) + RESET;
+    else
+    return std::string(SuitColor[card.GetSuit()].data()) + std::string(SuitName[card.GetSuit()]) + " " + std::string(RankName[card.GetRank()].data()) + RESET;
+}
+
+std::string FromHandToString(DrunkEngine::Hand &hand)
+{
+    std::string handString;
+    handString.reserve(256);
+
+    for (auto card : hand.cards)
+    {
+        if (card == DrunkEngine::CardTrait::Rank::UNDEFINED) break;
+
+        handString += FromCardToString(card) + "\n";
+    }
+    return handString;
+}
+
+std::string FromSecretHandToString(DrunkEngine::Hand &hand)
+{
+    std::string handString;
+    handString.reserve(256);
+
+    uint8_t i = 0;
+    for (auto card : hand.cards)
+    {
+        if (card == DrunkEngine::CardTrait::Rank::UNDEFINED) break;
+        if (i == 1)
+            handString += "Hidden Card\n";
+        else
+            handString += FromCardToString(hand.cards[i]) + "\n";
+        i++;
+    }
+    return handString;
 }

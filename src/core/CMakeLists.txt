@@ -1,0 +1,8 @@
+add_subdirectory(core_definitions)
+add_subdirectory(generator)
+add_subdirectory(card)
+add_subdirectory(hand)
+add_subdirectory(deck_handler)
+add_subdirectory(player)
+add_subdirectory(engine)
+add_subdirectory(ai_logic)
