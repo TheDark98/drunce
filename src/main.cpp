@@ -266,7 +266,7 @@ void printPlayerHand(DrunkEngine::Hand &hand)
 void printDealerHand(DrunkEngine::Hand &hand)
 {
     formattedPrint("Dealer Hand\n");
-    formattedPrint(FromHandToString(hand) + "\n");
+    formattedPrint(FromHandToString(hand));
     formattedPrint(BOLD, WHITE, std::string("Value: ") + std::to_string(hand.GetValue(false)) + "\n");
     formattedPrint(BOLD, WHITE, VISUAL_SPACER);
 }
@@ -274,8 +274,7 @@ void printDealerHand(DrunkEngine::Hand &hand)
 void printDealerSecretHand(DrunkEngine::Hand &hand)
 {
     formattedPrint("Dealer Hand\n");
-    formattedPrint(FromSecretHandToString(hand) + "\n");
-    formattedPrint("Secret Card\n");
+    formattedPrint(FromSecretHandToString(hand));
     formattedPrint(BOLD, WHITE, std::string("Value: ") + "?" + "\n");
     formattedPrint(BOLD, WHITE, VISUAL_SPACER);
 }
